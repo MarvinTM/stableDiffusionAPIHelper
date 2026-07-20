@@ -1,0 +1,8 @@
+{
+  "name": "stable-diffusion-api-helper",
+  "version": "1.0.0",
+  "description": "CLI tool to batch generate images via Stable Diffusion (Forge/reForge) API",
+  "type": "module",
+  "main": "src/cli.js",
+  "license": "MIT"
+}

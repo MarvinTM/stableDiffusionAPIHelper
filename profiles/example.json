@@ -1,0 +1,9 @@
+{
+  "prompt": "gmic, 2dguofeng, isometric game icon, ###ICON###, sharp focus, <lora:sdXL_v10VAEFix:1>",
+  "negative_prompt": "blurry, low quality, complex background",
+  "steps": 25,
+  "cfg_scale": 6.0,
+  "width": 1024,
+  "height": 1024,
+  "batch_size": 1
+}
