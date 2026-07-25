@@ -95,6 +95,7 @@ function parseArgs(argv) {
 
 function expandParamValues(rawValues) {
   const result = [];
+  let filenames = null;
   for (const raw of rawValues) {
     if (raw.startsWith('@')) {
       const filePath = resolve(raw.slice(1));
@@ -108,12 +109,25 @@ function expandParamValues(rawValues) {
       if (lines.length === 0) {
         throw new Error(`Values file "${filePath}" is empty.`);
       }
-      result.push(...lines);
+      for (const line of lines) {
+        const sepIdx = line.indexOf(';;;');
+        if (sepIdx !== -1) {
+          filenames = filenames || new Map();
+          const name = line.slice(0, sepIdx).trim();
+          const value = line.slice(sepIdx + 3).trim();
+          if (value) {
+            filenames.set(value, name);
+            result.push(value);
+          }
+        } else {
+          result.push(line);
+        }
+      }
     } else {
       result.push(...raw.split(',').map(v => v.trim()).filter(Boolean));
     }
   }
-  return result;
+  return { values: result, filenames };
 }
 
 async function main() {
@@ -136,8 +150,13 @@ async function main() {
   const placeholders = findPlaceholders(profileData);
 
   const paramValues = {};
+  const paramFilenames = {};
   for (const key of Object.keys(rawArgs.params)) {
-    paramValues[key] = expandParamValues(rawArgs.params[key]);
+    const expanded = expandParamValues(rawArgs.params[key]);
+    paramValues[key] = expanded.values;
+    if (expanded.filenames) {
+      paramFilenames[key] = expanded.filenames;
+    }
   }
 
   for (const key of Object.keys(paramValues)) {
@@ -169,6 +188,7 @@ async function main() {
     timeoutMs: config.timeout_ms,
     outputDir,
     paramValues,
+    paramFilenames,
     concurrency: rawArgs.concurrency,
     samples: rawArgs.samples,
     dryRun: rawArgs.dryRun,

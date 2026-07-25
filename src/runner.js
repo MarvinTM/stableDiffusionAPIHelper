@@ -23,13 +23,20 @@ function cartesianProduct(paramSets) {
   return result;
 }
 
-function comboToFilename(combo, sampleIndex, sampleCount, batchIdx, batchSize) {
+function comboToFilename(combo, sampleIndex, sampleCount, batchIdx, batchSize, filenames = {}) {
   const parts = [];
-  const comboVals = Object.values(combo);
-  if (comboVals.length === 0) {
+  const entries = Object.entries(combo);
+  if (entries.length === 0) {
     parts.push('image');
   } else {
-    parts.push(...comboVals);
+    for (const [key, val] of entries) {
+      const keyFilenames = filenames[key];
+      if (keyFilenames && keyFilenames.has(val)) {
+        parts.push(keyFilenames.get(val));
+      } else {
+        parts.push(val);
+      }
+    }
   }
   if (sampleCount > 1) {
     parts.push(String(sampleIndex + 1));
@@ -48,6 +55,7 @@ export async function run(options) {
     timeoutMs,
     outputDir,
     paramValues,
+    paramFilenames = {},
     concurrency,
     samples,
     dryRun,
@@ -73,7 +81,7 @@ export async function run(options) {
     console.log(`[dry-run] Output dir: ${outputDir}`);
     console.log(`[dry-run] Files that would be generated:`);
     for (const task of tasks) {
-      const label = comboToFilename(task.combo, task.sampleIndex, samples, 0, 1);
+      const label = comboToFilename(task.combo, task.sampleIndex, samples, 0, 1, paramFilenames);
       const comboDesc = Object.values(task.combo).join(',') || '(no params)';
       console.log(`[dry-run]   ${label}  <- ${comboDesc}${samples > 1 ? ` sample=${task.sampleIndex + 1}` : ''}`);
     }
@@ -96,7 +104,7 @@ export async function run(options) {
     try {
       const buffers = await generateImage(host, port, substituted, timeoutMs);
       buffers.forEach((buf, batchIdx) => {
-        const filename = comboToFilename(combo, sampleIndex, samples, batchIdx, buffers.length);
+        const filename = comboToFilename(combo, sampleIndex, samples, batchIdx, buffers.length, paramFilenames);
         writeFileSync(resolve(outputDir, filename), buf);
       });
       completed++;
